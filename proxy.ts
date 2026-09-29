@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/signup', '/auth/confirm'];
 
+// Metadata routes Next.js generates from app/icon.tsx, app/apple-icon.tsx,
+// app/opengraph-image.tsx, and app/twitter-image.tsx. Link-preview crawlers
+// (Slack, LinkedIn, Twitter) and browser tabs fetch these anonymously --
+// without this list they'd hit the auth redirect below and get an HTML
+// login page back instead of an image.
+const PUBLIC_METADATA_PATHS = ['/icon', '/apple-icon', '/opengraph-image', '/twitter-image'];
+
 // Renamed from "middleware" to "proxy" as of Next.js 16 -- same convention,
 // same signature, new file/export name.
 export async function proxy(request: NextRequest) {
@@ -35,7 +42,9 @@ export async function proxy(request: NextRequest) {
   const isAuthenticated = data?.claims != null;
 
   const pathname = request.nextUrl.pathname;
-  const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublicPath =
+    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
+    PUBLIC_METADATA_PATHS.some((p) => pathname.startsWith(p));
   const isApiPath = pathname.startsWith('/api/');
 
   // API routes enforce their own auth and return a structured 401 JSON

@@ -112,3 +112,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Used on the tailored-resume view (app/dashboard/[jobId]/resume) to hide
+   the nav/print button when the browser's print dialog (or "save as PDF")
+   is used. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+}

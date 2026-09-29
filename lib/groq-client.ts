@@ -1,6 +1,9 @@
 import Groq, { APIError, InternalServerError, RateLimitError } from 'groq-sdk';
 import { z } from 'zod';
 import { AIAnalysisResponseSchema } from '@/schemas/ai-response.schema';
+import { CandidateProfileSchema, type CandidateProfile } from '@/schemas/candidate-profile.schema';
+import { TailoredResumeSchema } from '@/schemas/tailored-resume.schema';
+import type { WorkExperienceEntry, EducationEntry } from '@/schemas/candidate-profile.schema';
 
 function toBareJsonSchema(schema: z.ZodType): Record<string, unknown> {
   const full: Record<string, unknown> = { ...z.toJSONSchema(schema) };
@@ -15,15 +18,8 @@ function toBareJsonSchema(schema: z.ZodType): Record<string, unknown> {
 // schema object, not a self-describing document.
 const RESPONSE_JSON_SCHEMA = toBareJsonSchema(AIAnalysisResponseSchema);
 
-const NameExtractionSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .max(150)
-    .nullable()
-    .describe('The candidate\'s full name as it appears on the resume, or null if none is present'),
-});
-const NAME_JSON_SCHEMA = toBareJsonSchema(NameExtractionSchema);
+const CANDIDATE_PROFILE_JSON_SCHEMA = toBareJsonSchema(CandidateProfileSchema);
+const TAILORED_RESUME_JSON_SCHEMA = toBareJsonSchema(TailoredResumeSchema);
 
 // Only a handful of Groq models currently support `strict: true` structured
 // outputs (console.groq.com/docs/structured-outputs#supported-models,
@@ -110,7 +106,8 @@ function classifyError(err: unknown): ErrorKind {
 async function callGroqStructured(
   prompt: string,
   schemaName: string,
-  jsonSchema: Record<string, unknown>
+  jsonSchema: Record<string, unknown>,
+  maxCompletionTokens = 2000
 ): Promise<unknown> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -129,7 +126,7 @@ async function callGroqStructured(
         model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_completion_tokens: 2000,
+        max_completion_tokens: maxCompletionTokens,
         response_format: {
           type: 'json_schema',
           json_schema: { name: schemaName, schema: jsonSchema, strict: true },
@@ -179,25 +176,117 @@ export async function callGroqForAnalysis(prompt: string): Promise<unknown> {
   return callGroqStructured(prompt, 'resume_analysis', RESPONSE_JSON_SCHEMA);
 }
 
+export interface TailoredResumeInput {
+  fullName: string | null;
+  headline: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  links: string[];
+  summary: string | null;
+  skills: string[];
+  workExperience: WorkExperienceEntry[];
+  education: EducationEntry[];
+  certifications: string[];
+}
+
+function formatProfileForPrompt(profile: TailoredResumeInput): string {
+  const lines: string[] = [];
+  lines.push(`Name: ${profile.fullName ?? 'Unknown'}`);
+  if (profile.headline) lines.push(`Headline: ${profile.headline}`);
+  if (profile.email) lines.push(`Email: ${profile.email}`);
+  if (profile.phone) lines.push(`Phone: ${profile.phone}`);
+  if (profile.location) lines.push(`Location: ${profile.location}`);
+  if (profile.links.length) lines.push(`Links: ${profile.links.join(', ')}`);
+  if (profile.summary) lines.push(`\nSummary: ${profile.summary}`);
+  if (profile.skills.length) lines.push(`\nSkills: ${profile.skills.join(', ')}`);
+
+  if (profile.workExperience.length) {
+    lines.push('\nWork Experience:');
+    for (const job of profile.workExperience) {
+      lines.push(`- ${job.title} at ${job.company} (${job.startDate ?? '?'} - ${job.endDate ?? '?'})`);
+      if (job.description) lines.push(`  ${job.description}`);
+    }
+  }
+
+  if (profile.education.length) {
+    lines.push('\nEducation:');
+    for (const edu of profile.education) {
+      const degreeLine = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(', ');
+      lines.push(`- ${edu.institution}${degreeLine ? ` — ${degreeLine}` : ''} (${edu.startDate ?? '?'} - ${edu.endDate ?? '?'})`);
+    }
+  }
+
+  if (profile.certifications.length) {
+    lines.push(`\nCertifications: ${profile.certifications.join(', ')}`);
+  }
+
+  return lines.join('\n');
+}
+
+export function buildTailoredResumePrompt(profile: TailoredResumeInput, jobDescriptionText: string): string {
+  return `You are an expert resume writer. Rewrite the candidate's resume below to target the specific job description, using ONLY information present in the candidate's original profile -- never invent employers, titles, dates, skills, or achievements that aren't there.
+
+What to change:
+- headline: rewrite to match the target role's title/focus.
+- summary: rewrite (2-4 sentences) to foreground the candidate's experience most relevant to this job.
+- skills: reorder so the skills most relevant to the job description come first; you may omit clearly irrelevant ones, but do not add skills the candidate doesn't have.
+- workExperience: for each role, rewrite the description into 2-4 concise, achievement-focused bullet points, phrased to highlight relevance to the target job where the original content genuinely supports it. Do not fabricate metrics or responsibilities not implied by the original.
+- education, certifications: carry over as-is (fix formatting only, don't invent).
+
+--- CANDIDATE PROFILE ---
+${formatProfileForPrompt(profile)}
+
+--- TARGET JOB DESCRIPTION ---
+${jobDescriptionText}
+`;
+}
+
 /**
- * Best-effort extraction of the candidate's name from their resume text, for
- * display purposes only (e.g. greeting them by name on the dashboard instead
- * of their email). Never throws -- returns null on any failure, since a
- * missing name should never block saving a resume.
+ * Generates a resume tailored to a specific job description from the
+ * candidate's stored profile. Unlike extractCandidateProfile (best-effort,
+ * never throws), this is a deliberate user-initiated action -- callers
+ * should catch GroqRateLimitError/GroqTransientError/GroqInvalidOutputError/
+ * GroqUpstreamError and surface a clear message rather than silently
+ * degrading.
  */
-export async function extractCandidateName(resumeText: string): Promise<string | null> {
-  const prompt = `Extract the candidate's full name from the resume text below. Respond with just their name, or null if no name is present.
+export async function callGroqForTailoredResume(prompt: string): Promise<unknown> {
+  return callGroqStructured(prompt, 'tailored_resume', TAILORED_RESUME_JSON_SCHEMA, 3500);
+}
+
+/**
+ * Best-effort extraction of a full structured profile (contact info,
+ * headline, summary, skills, work history, education, certifications,
+ * projects) from resume text, used to pre-fill the editable profile form on
+ * /profile so the user isn't starting from a blank page. Never throws --
+ * returns null on total failure (e.g. Groq unreachable), which the caller
+ * treats as "leave existing profile fields untouched" rather than
+ * clobbering them with empty values.
+ */
+export async function extractCandidateProfile(resumeText: string): Promise<CandidateProfile | null> {
+  const prompt = `Extract a complete, structured professional profile from the resume text below. Cover every section present -- contact info, summary, skills, work experience, education, certifications, and projects. Use null (for scalar fields) or an empty array (for list fields) for anything genuinely absent -- never invent information that isn't present in the text.
+
+Guidance:
+- workExperience: one entry per role, most recent first. Keep "description" to a brief 1-3 sentence summary of responsibilities/impact, not a verbatim bullet dump.
+- education: one entry per degree/program.
+- certifications: names only, e.g. "AWS Certified Solutions Architect".
+- projects: personal/side projects mentioned outside of work experience, if any.
+- links: URLs only (LinkedIn, GitHub, portfolio, etc.), not plain text.
 
 --- RESUME ---
-${resumeText.slice(0, 2000)}
+${resumeText.slice(0, 8000)}
 `;
 
   try {
-    const raw = await callGroqStructured(prompt, 'name_extraction', NAME_JSON_SCHEMA);
-    const parsed = NameExtractionSchema.safeParse(raw);
-    return parsed.success ? parsed.data.name : null;
+    const raw = await callGroqStructured(prompt, 'candidate_profile', CANDIDATE_PROFILE_JSON_SCHEMA, 3500);
+    const parsed = CandidateProfileSchema.safeParse(raw);
+    if (!parsed.success) {
+      console.warn('[extractCandidateProfile] Response failed validation:', parsed.error.issues);
+      return null;
+    }
+    return parsed.data;
   } catch (err) {
-    console.warn('[extractCandidateName] Failed, continuing without a name:', err);
+    console.warn('[extractCandidateProfile] Failed, leaving profile fields untouched:', err);
     return null;
   }
 }

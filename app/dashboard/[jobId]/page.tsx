@@ -6,6 +6,7 @@ import { AppNav } from '@/components/layout/AppNav';
 import { MatchScoreGauge } from '@/components/MatchScoreGauge';
 import { SkillMatrix } from '@/components/SkillMatrix';
 import { SuggestionsList } from '@/components/SuggestionsList';
+import { GenerateResumeButton } from '@/components/dashboard/GenerateResumeButton';
 import type { JobAnalysisRow, Profile } from '@/types/db';
 
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
@@ -27,7 +28,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
     notFound();
   }
 
-  const date = new Date(job.created_at).toLocaleDateString(undefined, {
+  const date = new Date(job.created_at).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -46,9 +47,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
           Back to dashboard
         </Link>
 
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text)]">{job.job_title}</h1>
-          <p className="text-sm text-[var(--color-text-faint)]">Analyzed {date}</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text)]">{job.job_title}</h1>
+            <p className="text-sm text-[var(--color-text-faint)]">Analyzed {date}</p>
+          </div>
+          <GenerateResumeButton jobId={job.id} hasExisting={!!job.tailored_resume} />
         </div>
 
         <section className="space-y-8 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">

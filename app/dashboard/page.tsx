@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowUpRight, TrendingUp, FileCheck2 } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, FileText, TrendingUp, FileCheck2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AppNav } from '@/components/layout/AppNav';
 import { JobCard } from '@/components/dashboard/JobCard';
@@ -44,13 +44,22 @@ export default async function DashboardPage() {
                 : 'Run your first analysis to see it here'}
             </p>
           </div>
-          <Link
-            href="/analyze"
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-canvas)] shadow-[0_4px_20px_-4px_color-mix(in_oklch,var(--color-accent)_50%,transparent)] transition-transform hover:scale-[1.03] active:scale-[0.98]"
-          >
-            New Analysis
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              href="/generate-resume"
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            >
+              <FileText className="h-4 w-4" />
+              Generate Resume
+            </Link>
+            <Link
+              href="/analyze"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-canvas)] shadow-[0_4px_20px_-4px_color-mix(in_oklch,var(--color-accent)_50%,transparent)] transition-transform hover:scale-[1.03] active:scale-[0.98]"
+            >
+              New Analysis
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
         {jobs && jobs.length > 0 && avgScore !== null && bestJob && (

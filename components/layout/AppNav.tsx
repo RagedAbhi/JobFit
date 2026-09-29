@@ -18,6 +18,12 @@ export function AppNav({ displayName }: { displayName?: string | null }) {
             New Analysis
           </Link>
           <Link
+            href="/generate-resume"
+            className="hidden font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] sm:inline"
+          >
+            Generate Resume
+          </Link>
+          <Link
             href="/profile"
             className="font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
           >

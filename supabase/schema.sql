@@ -6,6 +6,18 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   full_name text,
+  headline text,
+  email text,
+  phone text,
+  location text,
+  links jsonb not null default '[]',
+  skills jsonb not null default '[]',
+  years_experience int,
+  summary text,
+  work_experience jsonb not null default '[]',
+  education jsonb not null default '[]',
+  certifications jsonb not null default '[]',
+  projects jsonb not null default '[]',
   resume_text text,
   resume_filename text,
   resume_page_count int,
@@ -60,6 +72,7 @@ create table if not exists public.job_analyses (
   missing_skills jsonb not null default '[]',
   optional_missing_skills jsonb not null default '[]',
   improvement_suggestions jsonb not null default '[]',
+  tailored_resume jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -77,6 +90,11 @@ drop policy if exists "Users can insert their own job analyses" on public.job_an
 create policy "Users can insert their own job analyses"
   on public.job_analyses for insert
   with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own job analyses" on public.job_analyses;
+create policy "Users can update their own job analyses"
+  on public.job_analyses for update
+  using (auth.uid() = user_id);
 
 drop policy if exists "Users can delete their own job analyses" on public.job_analyses;
 create policy "Users can delete their own job analyses"

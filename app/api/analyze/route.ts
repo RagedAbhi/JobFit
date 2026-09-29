@@ -9,6 +9,7 @@ import {
   GroqTransientError,
 } from '@/lib/groq-client';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { ApiErrorCode, ApiResponse, AnalyzeSuccessResponse } from '@/types/analysis';
 import type { Profile } from '@/types/db';
 
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return jsonError('INVALID_REQUEST', 'You must be signed in to run an analysis.', 401);
+  }
+
+  // Each analysis costs a real AI call -- cap how often one account can
+  // trigger them so a runaway client (or bot) can't burn through the whole
+  // app's free-tier Groq quota.
+  const rateLimit = checkRateLimit(`analyze:${user.id}`, 5, 5 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return jsonError(
+      'RATE_LIMITED',
+      `You've hit the analysis limit. Please try again in ${rateLimit.retryAfterSeconds}s.`,
+      429
+    );
   }
 
   let bodyJson: unknown;
@@ -131,7 +144,10 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (insertError || !inserted) {
-        console.error('[analyze] Failed to persist job analysis:', insertError);
+        console.error(
+          '[analyze] Failed to persist job analysis:',
+          insertError ? JSON.stringify(insertError, Object.getOwnPropertyNames(insertError)) : 'no row returned'
+        );
         return jsonError(
           'UPSTREAM_ERROR',
           'Analysis succeeded but saving it failed. Please try again.',

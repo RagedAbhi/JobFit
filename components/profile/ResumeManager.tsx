@@ -5,6 +5,7 @@ import { FileText, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { ResumeUploadZone } from '@/components/ResumeUploadZone';
 import type { ParsedPdf } from '@/lib/pdf-parser';
 import type { ApiResponse } from '@/types/analysis';
+import type { CandidateProfile } from '@/schemas/candidate-profile.schema';
 import type { Profile } from '@/types/db';
 
 interface SavedResume {
@@ -26,7 +27,12 @@ function toSavedResume(profile: Profile | null): SavedResume | null {
   };
 }
 
-export function ResumeManager({ initialProfile }: { initialProfile: Profile | null }) {
+interface ResumeManagerProps {
+  initialProfile: Profile | null;
+  onExtracted?: (profile: CandidateProfile) => void;
+}
+
+export function ResumeManager({ initialProfile, onExtracted }: ResumeManagerProps) {
   const [saved, setSaved] = useState<SavedResume | null>(toSavedResume(initialProfile));
   const [showUpload, setShowUpload] = useState(saved === null);
   const [saving, setSaving] = useState(false);
@@ -47,7 +53,7 @@ export function ResumeManager({ initialProfile }: { initialProfile: Profile | nu
           charCount: result.charCount,
         }),
       });
-      const json = (await res.json()) as ApiResponse<{ saved: true; fullName: string | null }>;
+      const json = (await res.json()) as ApiResponse<{ saved: true; profile: CandidateProfile | null }>;
 
       if (!json.success) {
         setError(json.error.message);
@@ -59,9 +65,13 @@ export function ResumeManager({ initialProfile }: { initialProfile: Profile | nu
         pageCount: result.pageCount,
         charCount: result.charCount,
         updatedAt: new Date().toISOString(),
-        fullName: json.data.fullName,
+        fullName: json.data.profile?.name ?? null,
       });
       setShowUpload(false);
+
+      if (json.data.profile) {
+        onExtracted?.(json.data.profile);
+      }
     } catch {
       setError('Network error — please try again.');
     } finally {
@@ -81,8 +91,8 @@ export function ResumeManager({ initialProfile }: { initialProfile: Profile | nu
               </p>
               <p className="text-xs text-[var(--color-text-faint)]">
                 {saved.fileName} · {saved.pageCount} page{saved.pageCount === 1 ? '' : 's'} ·{' '}
-                {saved.charCount.toLocaleString()} characters · updated{' '}
-                {new Date(saved.updatedAt).toLocaleDateString()}
+                {saved.charCount.toLocaleString('en-US')} characters · updated{' '}
+                {new Date(saved.updatedAt).toLocaleDateString('en-US')}
               </p>
             </div>
           </div>

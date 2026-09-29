@@ -54,7 +54,7 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, style, className }: JobCardProps) {
-  const date = new Date(job.created_at).toLocaleDateString(undefined, {
+  const date = new Date(job.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
