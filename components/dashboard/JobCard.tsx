@@ -1,7 +1,11 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { JobAnalysisRow } from '@/types/db';
+import type { ApiResponse } from '@/types/analysis';
 
 function scoreVar(score: number) {
   if (score >= 70) return 'var(--color-success)';
@@ -51,15 +55,51 @@ interface JobCardProps {
   job: JobAnalysisRow;
   style?: React.CSSProperties;
   className?: string;
+  onDeleted?: (jobId: string) => void;
 }
 
-export function JobCard({ job, style, className }: JobCardProps) {
+export function JobCard({ job, style, className, onDeleted }: JobCardProps) {
   const date = new Date(job.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
   const color = scoreVar(job.match_score);
+
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const requestDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConfirming(true);
+  };
+
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConfirming(false);
+  };
+
+  const confirmDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleting(true);
+
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+      const json = (await res.json()) as ApiResponse<{ deleted: true }>;
+
+      if (json.success) {
+        onDeleted?.(job.id);
+        return;
+      }
+    } catch {
+      // fall through to reset below
+    }
+    setDeleting(false);
+    setConfirming(false);
+  };
 
   return (
     <Link
@@ -81,10 +121,46 @@ export function JobCard({ job, style, className }: JobCardProps) {
       <p className="line-clamp-3 flex-1 text-sm text-[var(--color-text-muted)]">{job.summary}</p>
 
       <div className="flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-3">
-        <span className="text-xs font-medium" style={{ color }}>
-          {scoreLabel(job.match_score)}
-        </span>
-        <ChevronRight className="h-4 w-4 text-[var(--color-text-faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--color-accent)]" />
+        {confirming ? (
+          <div className="flex w-full items-center justify-between gap-2 text-xs">
+            <span className="text-[var(--color-text-faint)]">Delete this analysis?</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={cancelDelete}
+                disabled={deleting}
+                className="font-medium text-[var(--color-text-faint)] hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="font-semibold text-[var(--color-danger)] hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <span className="text-xs font-medium" style={{ color }}>
+              {scoreLabel(job.match_score)}
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={requestDelete}
+                aria-label="Delete analysis"
+                className="text-[var(--color-text-faint)] opacity-0 transition-opacity hover:text-[var(--color-danger)] group-hover:opacity-100"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--color-accent)]" />
+            </div>
+          </>
+        )}
       </div>
     </Link>
   );

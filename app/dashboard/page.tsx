@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowUpRight, FileText, TrendingUp, FileCheck2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AppNav } from '@/components/layout/AppNav';
-import { JobCard } from '@/components/dashboard/JobCard';
+import { JobGrid } from '@/components/dashboard/JobGrid';
 import type { JobAnalysisRow, Profile } from '@/types/db';
 
 export default async function DashboardPage() {
@@ -102,22 +102,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {jobs && jobs.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job, i) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                style={{ animationDelay: `${120 + Math.min(i, 8) * 50}ms` }}
-                className="animate-fade-in-up"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-[var(--color-border)] p-10 text-center text-sm text-[var(--color-text-faint)]">
-            No job analyses yet. Run your first one from &quot;New Analysis&quot;.
-          </div>
-        )}
+        <JobGrid jobs={jobs ?? []} />
       </main>
     </div>
   );
