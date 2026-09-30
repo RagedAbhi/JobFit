@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowUpRight, FileText, TrendingUp, FileCheck2 } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Circle, FileText, TrendingUp, FileCheck2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AppNav } from '@/components/layout/AppNav';
 import { JobGrid } from '@/components/dashboard/JobGrid';
+import { CountUpNumber } from '@/components/dashboard/CountUpNumber';
 import type { JobAnalysisRow, Profile } from '@/types/db';
 
 export default async function DashboardPage() {
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
   const jobs = jobsData as JobAnalysisRow[] | null;
   const profile = profileData as Profile | null;
 
-  const hasResume = !!profile?.resume_text;
+  const hasResume = !!profile?.active_resume_id;
   const firstName = profile?.full_name?.trim().split(/\s+/)[0];
   const displayName = profile?.full_name ?? email;
 
@@ -69,40 +70,75 @@ export default async function DashboardPage() {
                 <FileCheck2 className="h-3.5 w-3.5" />
                 <span className="text-xs font-medium uppercase tracking-wide">Analyses</span>
               </div>
-              <p className="mt-1.5 text-2xl font-semibold text-[var(--color-text)]">{jobs.length}</p>
+              <CountUpNumber value={jobs.length} className="mt-1.5 block text-2xl font-semibold text-[var(--color-text)]" />
             </div>
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4">
               <div className="flex items-center gap-1.5 text-[var(--color-text-faint)]">
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span className="text-xs font-medium uppercase tracking-wide">Avg. match</span>
               </div>
-              <p className="mt-1.5 text-2xl font-semibold text-[var(--color-accent)]">{avgScore}%</p>
+              <CountUpNumber
+                value={avgScore}
+                suffix="%"
+                className="mt-1.5 block text-2xl font-semibold text-[var(--color-accent)]"
+              />
             </div>
             <div className="col-span-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4 sm:col-span-1">
               <div className="flex items-center gap-1.5 text-[var(--color-text-faint)]">
                 <span className="text-xs font-medium uppercase tracking-wide">Best match</span>
               </div>
-              <p className="mt-1.5 truncate text-2xl font-semibold text-[var(--color-success)]">
-                {bestJob.match_score}%
-              </p>
+              <CountUpNumber
+                value={bestJob.match_score}
+                suffix="%"
+                className="mt-1.5 block truncate text-2xl font-semibold text-[var(--color-success)]"
+              />
             </div>
           </div>
         )}
 
-        {!hasResume && (
-          <div className="flex items-start gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-[var(--color-warning)]" />
-            <p className="text-sm text-[var(--color-text-muted)]">
-              You haven&apos;t uploaded a resume yet.{' '}
-              <Link href="/profile" className="font-semibold text-[var(--color-text)] underline">
-                Add one to your profile
-              </Link>{' '}
-              before running an analysis.
-            </p>
+        {(!hasResume || (jobs?.length ?? 0) === 0) && (
+          <div className="animate-fade-in-up rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
+            <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">Get started</p>
+            <ul className="space-y-2.5">
+              <li className="flex items-center gap-2.5">
+                {hasResume ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: 'var(--color-success)' }} />
+                ) : (
+                  <Circle className="h-4 w-4 shrink-0 text-[var(--color-text-faint)]" />
+                )}
+                <span
+                  className={`text-sm ${hasResume ? 'text-[var(--color-text-faint)] line-through' : 'text-[var(--color-text-muted)]'}`}
+                >
+                  Add your resume
+                </span>
+                {!hasResume && (
+                  <Link href="/profile" className="ml-auto text-xs font-semibold text-[var(--color-accent)] hover:underline">
+                    Go to profile
+                  </Link>
+                )}
+              </li>
+              <li className="flex items-center gap-2.5">
+                {(jobs?.length ?? 0) > 0 ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: 'var(--color-success)' }} />
+                ) : (
+                  <Circle className="h-4 w-4 shrink-0 text-[var(--color-text-faint)]" />
+                )}
+                <span
+                  className={`text-sm ${(jobs?.length ?? 0) > 0 ? 'text-[var(--color-text-faint)] line-through' : 'text-[var(--color-text-muted)]'}`}
+                >
+                  Run your first analysis
+                </span>
+                {hasResume && (jobs?.length ?? 0) === 0 && (
+                  <Link href="/analyze" className="ml-auto text-xs font-semibold text-[var(--color-accent)] hover:underline">
+                    Start now
+                  </Link>
+                )}
+              </li>
+            </ul>
           </div>
         )}
 
-        <JobGrid jobs={jobs ?? []} />
+        {jobs && jobs.length > 0 && <JobGrid jobs={jobs} />}
       </main>
     </div>
   );

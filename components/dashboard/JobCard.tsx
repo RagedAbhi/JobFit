@@ -3,15 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getScoreColor } from '@/lib/utils';
 import type { JobAnalysisRow } from '@/types/db';
 import type { ApiResponse } from '@/types/analysis';
-
-function scoreVar(score: number) {
-  if (score >= 70) return 'var(--color-success)';
-  if (score >= 40) return 'var(--color-warning)';
-  return 'var(--color-danger)';
-}
 
 function scoreLabel(score: number) {
   if (score >= 70) return 'Strong match';
@@ -23,7 +17,7 @@ function ScoreRing({ score }: { score: number }) {
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - score / 100);
-  const color = scoreVar(score);
+  const color = getScoreColor(score);
 
   return (
     <div className="relative h-12 w-12 shrink-0">
@@ -64,7 +58,7 @@ export function JobCard({ job, style, className, onDeleted }: JobCardProps) {
     day: 'numeric',
     year: 'numeric',
   });
-  const color = scoreVar(job.match_score);
+  const color = getScoreColor(job.match_score);
 
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);

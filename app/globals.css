@@ -19,8 +19,11 @@
   --color-danger: oklch(0.68 0.18 25);
 }
 
+/* OS preference only applies when the user hasn't made an explicit choice
+   via ThemeToggle (components/layout/ThemeToggle.tsx) -- keep this block's
+   values identical to the explicit [data-theme='light'] block below. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
 
     --color-canvas: oklch(0.98 0.003 255);
@@ -37,6 +40,26 @@
     --color-warning: oklch(0.6 0.15 68);
     --color-danger: oklch(0.55 0.19 25);
   }
+}
+
+/* Explicit override wins regardless of OS preference. No [data-theme='dark']
+   block is needed -- the base :root above already is dark. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-canvas: oklch(0.98 0.003 255);
+  --color-surface: oklch(1 0 0);
+  --color-surface-raised: oklch(0.97 0.004 255);
+  --color-border: oklch(0.9 0.005 255);
+  --color-border-subtle: oklch(0.94 0.004 255);
+  --color-text: oklch(0.18 0.006 255);
+  --color-text-muted: oklch(0.45 0.006 255);
+  --color-text-faint: oklch(0.6 0.006 255);
+  --color-accent: oklch(0.55 0.135 199);
+  --color-accent-strong: oklch(0.48 0.14 199);
+  --color-success: oklch(0.52 0.14 152);
+  --color-warning: oklch(0.6 0.15 68);
+  --color-danger: oklch(0.55 0.19 25);
 }
 
 @theme inline {

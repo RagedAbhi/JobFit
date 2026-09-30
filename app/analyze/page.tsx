@@ -3,16 +3,30 @@ import { AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AppNav } from '@/components/layout/AppNav';
 import { AnalyzeFlow } from '@/components/analyze/AnalyzeFlow';
-import type { Profile } from '@/types/db';
+import type { Profile, Resume } from '@/types/db';
+import type { ResumeListEntry } from '@/app/api/resumes/route';
 
 export default async function AnalyzePage() {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const email = userData.user?.email;
 
-  const { data } = await supabase.from('profiles').select('*').single();
-  const profile = data as Profile | null;
-  const hasResume = !!profile?.resume_text;
+  const [{ data: profileData }, { data: resumesData }] = await Promise.all([
+    supabase.from('profiles').select('*').single(),
+    supabase.from('resumes').select('*').order('updated_at', { ascending: false }),
+  ]);
+  const profile = profileData as Profile | null;
+  const resumes = (resumesData as Resume[] | null) ?? [];
+  const resumeOptions: ResumeListEntry[] = resumes.map((r) => ({
+    id: r.id,
+    name: r.name,
+    fileName: r.resume_filename,
+    pageCount: r.resume_page_count,
+    charCount: r.resume_char_count,
+    updatedAt: r.updated_at,
+    isActive: r.id === profile?.active_resume_id,
+  }));
+  const hasResume = resumes.length > 0;
   const displayName = profile?.full_name ?? email;
 
   return (
@@ -37,7 +51,7 @@ export default async function AnalyzePage() {
           </div>
         ) : (
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">
-            <AnalyzeFlow />
+            <AnalyzeFlow resumes={resumeOptions} />
           </div>
         )}
       </main>

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { getScoreColor } from '@/lib/utils';
 
 interface MatchScoreGaugeProps {
   score: number;
@@ -12,8 +13,7 @@ export function MatchScoreGauge({ score }: MatchScoreGaugeProps) {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const color =
-    clamped >= 70 ? 'var(--color-success)' : clamped >= 40 ? 'var(--color-warning)' : 'var(--color-danger)';
+  const color = getScoreColor(clamped);
   const label = clamped >= 70 ? 'Strong Match' : clamped >= 40 ? 'Partial Match' : 'Weak Match';
 
   return (

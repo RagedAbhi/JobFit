@@ -11,7 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { ApiErrorCode, ApiResponse, AnalyzeSuccessResponse } from '@/types/analysis';
-import type { Profile } from '@/types/db';
+import type { Resume } from '@/types/db';
 
 // Vercel Hobby: default fn timeout is 10s, configurable up to 60s (the
 // ceiling on this plan). callGroqForAnalysis can try several models
@@ -64,23 +64,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { jobDescriptionText } = parsedRequest.data;
+  const { jobDescriptionText, resumeId } = parsedRequest.data;
 
-  // Resume comes from the authenticated user's profile, not the request
-  // body -- it's uploaded once via /profile and reused for every analysis.
-  const { data: profileData } = await supabase.from('profiles').select('*').single();
-  const profile = profileData as Profile | null;
-  const resumeText = profile?.resume_text;
+  // Ownership check, doubling up on RLS (supabase/AGENTS.md: never rely on
+  // app-level checks alone). A resumeId for another account's resume reads
+  // as a plain not-found rather than leaking whose it is.
+  const { data: resumeData } = await supabase
+    .from('resumes')
+    .select('*')
+    .eq('id', resumeId)
+    .eq('user_id', user.id)
+    .single();
+  const resume = resumeData as Resume | null;
 
-  if (!resumeText) {
-    return jsonError(
-      'INVALID_REQUEST',
-      'No resume on file yet. Upload one from your profile first.',
-      400
-    );
+  if (!resume) {
+    return jsonError('INVALID_REQUEST', 'That resume was not found. Pick a resume to analyze.', 400);
   }
 
-  const prompt = buildAnalysisPrompt(resumeText, jobDescriptionText);
+  const prompt = buildAnalysisPrompt(resume.resume_text, jobDescriptionText);
 
   // callGroqForAnalysis already tries several models internally on overload
   // (see FALLBACK_MODELS), and a single pass through that list can already
@@ -139,6 +140,7 @@ export async function POST(req: NextRequest) {
           missing_skills: analysis.missingSkills,
           optional_missing_skills: analysis.optionalMissingSkills,
           improvement_suggestions: analysis.improvementSuggestions,
+          resume_id: resume.id,
         })
         .select('id')
         .single();
@@ -152,6 +154,20 @@ export async function POST(req: NextRequest) {
           'UPSTREAM_ERROR',
           'Analysis succeeded but saving it failed. Please try again.',
           502
+        );
+      }
+
+      // Picking a resume here also switches it to the account's active one
+      // (see docs/specs/0001-multiple-resumes-add-switch/index.md, AC-3) -- best
+      // effort, never blocks returning the analysis that already saved.
+      const { error: activateError } = await supabase
+        .from('profiles')
+        .update({ active_resume_id: resume.id, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (activateError) {
+        console.error(
+          '[analyze] Failed to set the active resume:',
+          JSON.stringify(activateError, Object.getOwnPropertyNames(activateError))
         );
       }
 

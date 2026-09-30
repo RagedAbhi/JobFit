@@ -17,10 +17,28 @@ export interface Profile {
   education: EducationEntry[];
   certifications: string[];
   projects: ProjectEntry[];
+  // Unused going forward (see docs/specs/0001-multiple-resumes-add-switch/index.md)
+  // -- a resume now lives in its own `resumes` row, reached via
+  // active_resume_id. Left in place, never dropped, for existing accounts'
+  // already-saved data.
   resume_text: string | null;
   resume_filename: string | null;
   resume_page_count: number | null;
   resume_char_count: number | null;
+  active_resume_id: string | null;
+  updated_at: string;
+}
+
+// One named resume. See docs/specs/0001-multiple-resumes-add-switch/index.md.
+export interface Resume {
+  id: string;
+  user_id: string;
+  name: string;
+  resume_text: string;
+  resume_filename: string;
+  resume_page_count: number;
+  resume_char_count: number;
+  created_at: string;
   updated_at: string;
 }
 
@@ -36,5 +54,6 @@ export interface JobAnalysisRow {
   optional_missing_skills: string[];
   improvement_suggestions: ImprovementSuggestion[];
   tailored_resume: TailoredResume | null;
+  resume_id: string | null;
   created_at: string;
 }

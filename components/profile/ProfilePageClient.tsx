@@ -1,12 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { ResumeManager } from '@/components/profile/ResumeManager';
+import { ResumeList } from '@/components/profile/ResumeList';
 import { ProfileEditor, toEditableFields, fromCandidateProfile } from '@/components/profile/ProfileEditor';
 import type { CandidateProfile } from '@/schemas/candidate-profile.schema';
 import type { Profile } from '@/types/db';
+import type { ResumeListEntry } from '@/app/api/resumes/route';
 
-export function ProfilePageClient({ initialProfile }: { initialProfile: Profile | null }) {
+export function ProfilePageClient({
+  initialProfile,
+  initialResumes,
+}: {
+  initialProfile: Profile | null;
+  initialResumes: ResumeListEntry[];
+}) {
   const [fields, setFields] = useState(() => toEditableFields(initialProfile));
   // Bumped whenever a resume re-extraction updates `fields` out from under
   // the editor, forcing ProfileEditor to remount and pick up the new values
@@ -21,8 +28,8 @@ export function ProfilePageClient({ initialProfile }: { initialProfile: Profile 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--color-text)]">Resume</h2>
-        <ResumeManager initialProfile={initialProfile} onExtracted={handleExtracted} />
+        <h2 className="mb-4 text-sm font-semibold text-[var(--color-text)]">Resumes</h2>
+        <ResumeList initialResumes={initialResumes} onExtracted={handleExtracted} />
       </div>
 
       <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">

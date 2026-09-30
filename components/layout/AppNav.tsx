@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { ResumeSwitcher } from '@/components/layout/ResumeSwitcher';
+import { CommandPalette } from '@/components/command/CommandPalette';
 
 export function AppNav({ displayName }: { displayName?: string | null }) {
   return (
@@ -32,6 +35,9 @@ export function AppNav({ displayName }: { displayName?: string | null }) {
           {displayName && (
             <span className="hidden text-[var(--color-text-faint)] sm:inline">{displayName}</span>
           )}
+          <ResumeSwitcher />
+          <CommandPalette />
+          <ThemeToggle />
           <form action="/auth/signout" method="post">
             <button
               type="submit"

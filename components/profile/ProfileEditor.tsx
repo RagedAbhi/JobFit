@@ -10,6 +10,7 @@ import {
   AddEntryButton,
   RemoveEntryButton,
 } from '@/components/forms/FormPrimitives';
+import { ProfileCompleteness } from '@/components/profile/ProfileCompleteness';
 import type { ApiResponse } from '@/types/analysis';
 import type { WorkExperienceEntry, EducationEntry, ProjectEntry } from '@/schemas/candidate-profile.schema';
 
@@ -331,6 +332,22 @@ export function ProfileEditor({ initialFields }: { initialFields: EditableProfil
 
   const dirty = () => setSaved(false);
 
+  // Ordered by how much each field actually moves match quality -- the
+  // percentage counts all checks equally, but the hint surfaces whichever
+  // gap matters most first.
+  const completenessChecks: { done: boolean; hint: string }[] = [
+    { done: summary.trim().length > 0, hint: 'Add a professional summary' },
+    { done: workExperience.length > 0, hint: 'Add work experience to strengthen match accuracy' },
+    { done: skills.length >= 3, hint: 'Add at least 3 skills' },
+    { done: education.length > 0, hint: 'Add your education' },
+    { done: headline.trim().length > 0, hint: 'Add a headline' },
+    { done: fullName.trim().length > 0, hint: 'Add your name' },
+  ];
+  const completenessPercent = Math.round(
+    (completenessChecks.filter((c) => c.done).length / completenessChecks.length) * 100
+  );
+  const completenessHint = completenessChecks.find((c) => !c.done)?.hint ?? null;
+
   const handleSave = async () => {
     setSaving(true);
     setError(null);
@@ -372,6 +389,8 @@ export function ProfileEditor({ initialFields }: { initialFields: EditableProfil
 
   return (
     <div className="space-y-8">
+      <ProfileCompleteness percent={completenessPercent} hint={completenessHint} />
+
       <div>
         <h3 className={sectionHeadingClass}>Basics</h3>
         <div className="grid gap-3 sm:grid-cols-2">

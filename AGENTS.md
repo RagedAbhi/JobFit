@@ -7,3 +7,54 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Resume Matcher
+
+## Stack
+
+- **Language / Runtime**: TypeScript, Node.js
+- **Framework**: Next.js 16.3.5 (App Router, Turbopack, React 19.3)
+- **Key dependencies**: Supabase (`@supabase/ssr`, `@supabase/supabase-js`) for Postgres + Auth, `groq-sdk` for AI calls, `zod` for schema validation, Tailwind CSS v4, `cmdk` (command palette), `framer-motion`
+- **Package manager**: npm
+
+## Build approach
+
+<TBD, set by /scope>
+
+## Commands
+
+```bash
+# Install
+npm install
+
+# Dev server
+npm run dev
+
+# Build
+npm run build
+
+# Test
+<no test suite configured yet>
+```
+
+## Specs
+
+Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`.
+
+## Rules
+
+- Server Components by default; add `'use client'` only where interactivity is actually needed.
+- Every API route returns the shared `ApiResponse<T>` discriminated union (`types/analysis.ts`) via a local `jsonError()` helper, and calls `checkRateLimit()` (`lib/rate-limit.ts`) on any route that costs an AI call or lets a user mutate data.
+- Groq's structured output JSON schemas are derived from the same Zod schemas used to validate the response (`z.toJSONSchema()` in `lib/groq-client.ts`), so the AI contract and the safety net validator can't drift apart.
+- Tailwind v4, no `tailwind.config.js`. Theme lives in `app/globals.css` as CSS custom properties (OKLCH, dark first) inside an `@theme inline` block. `data-theme="light"` on `<html>` overrides OS preference (see `components/layout/ThemeToggle.tsx`).
+- `proxy.ts` is Next 16's renamed `middleware.ts`, same signature, new file and export name (`export async function proxy`). It redirects unauthenticated requests to `/login`; API routes are exempt and return their own 401 JSON.
+- Postgres Row Level Security (`supabase/schema.sql`) enforces data isolation per user. Never rely on app level checks alone.
+- Always pass `'en-US'` explicitly to `toLocaleDateString`/`toLocaleString`. Omitting it causes server/client hydration mismatches.
+- Supabase errors: log with `JSON.stringify(error, Object.getOwnPropertyNames(error))`, not a plain `console.error(error)`. `PostgrestError` can otherwise serialize as `"{}"`.
+
+## Context files
+
+- [lib/AGENTS.md](lib/AGENTS.md): Groq AI integration conventions, PDF parsing and rate limiting gotchas
+- [supabase/AGENTS.md](supabase/AGENTS.md): manual, ordered SQL migration workflow
+
+_Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._

@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils';
 interface AnalyzeButtonProps {
   disabled: boolean;
   loading: boolean;
+  loadingLabel?: string;
   onClick: () => void;
 }
 
-export function AnalyzeButton({ disabled, loading, onClick }: AnalyzeButtonProps) {
+export function AnalyzeButton({ disabled, loading, loadingLabel, onClick }: AnalyzeButtonProps) {
   return (
     <button
       type="button"
@@ -27,7 +28,7 @@ export function AnalyzeButton({ disabled, loading, onClick }: AnalyzeButtonProps
       {loading ? (
         <>
           <Spinner className="h-4 w-4" />
-          Analyzing…
+          {loadingLabel ?? 'Analyzing…'}
         </>
       ) : (
         <>
