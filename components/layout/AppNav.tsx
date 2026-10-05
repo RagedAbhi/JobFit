@@ -10,7 +10,7 @@ export function AppNav({ displayName }: { displayName?: string | null }) {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5 sm:px-6">
         <Link href="/dashboard" className="flex items-center gap-2 text-[0.9rem] font-semibold tracking-tight text-[var(--color-text)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" aria-hidden />
-          Resume Matcher
+          Jobfit
         </Link>
 
         <div className="flex items-center gap-5 text-sm">

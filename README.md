@@ -1,4 +1,4 @@
-# AI Resume Screener & ATS Matcher
+# Jobfit
 
 Users sign up, upload a resume once, and match it against as many job descriptions as they like -- every analysis is saved to their dashboard with a match score, and clicking into one shows the full breakdown (skills matrix, suggestions, the original JD). Runs entirely on free-tier infrastructure: Next.js on Vercel Hobby + Groq's API (OpenAI-compatible, free tier) + Supabase (Postgres + Auth, free tier). PDF parsing happens client-side (`pdfjs-dist`), so raw files never hit the server -- only extracted text does, and only the extracted text is stored.
 

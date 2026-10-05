@@ -1,4 +1,4 @@
-# Scope: Resume Matcher
+# Scope: Jobfit
 
 An AI resume to job description matcher. Upload a resume once, run it against job descriptions, get a match score with a skills breakdown and improvement suggestions, all saved to a dashboard. Built as a portfolio piece, free tier only, one developer.
 
@@ -24,6 +24,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 1 | Multiple resumes: add and switch between named resumes | Slice 1 | in-progress |
 | 2 | Multiple resumes: per resume profile editing | Slice 2 | planned |
 | 3 | Multiple resumes: pick a resume when analyzing or generating | Slice 3 | planned |
+| 4 | Rebrand to Jobfit | Rebrand | done |
 
 ## Existing
 
@@ -85,6 +86,13 @@ Extend the structured profile editor (skills, work experience, education, and th
 The paste a job description flow, the standalone generate resume flow, and the command palette all ask which resume to use, instead of assuming there is only one.
 **Done when:** starting an analysis asks which resume to use once an account has more than one; each saved analysis remembers which resume it used; the dashboard and job detail page show that resume's name.
 - [ ] Design it (spec): `/architect multiple resumes: pick a resume when analyzing or generating`
+
+## Rebrand
+
+### 4. Rebrand to Jobfit
+Replace every user facing and project level instance of the current name ("Resume Matcher" / "Resume Parser" / "AI Resume Screener & ATS Matcher") with "Jobfit": nav/page titles, metadata (OpenGraph/Twitter image, app icon alt text), `README.md`, and `package.json`'s `name` field.
+**Done when:** no user facing or project level string still reads the old name, and the app still builds, lints, and runs clean under the new one.
+- [x] Build it: `/develop rebrand to jobfit` — renamed in README.md, package.json (+ package-lock.json via `npm install`), AGENTS.md, docs/scope/scope.md, app/layout.tsx (page title/metadata), components/layout/AppNav.tsx (nav brand), lib/og-image.tsx (OG/Twitter image). Lint, typecheck, tests, and build all verified clean after. README's screenshots recaptured against the live app to show "Jobfit" in the nav.
 
 ## Deferred
 Out of scope for this pass, kept so the plan stays honest.

@@ -34,7 +34,7 @@ export function SiteOgImage() {
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ width: 16, height: 16, borderRadius: '50%', background: ACCENT, display: 'flex' }} />
-        <span style={{ fontSize: 30, fontWeight: 600, color: TEXT }}>Resume Matcher</span>
+        <span style={{ fontSize: 30, fontWeight: 600, color: TEXT }}>Jobfit</span>
       </div>
       <div style={{ display: 'flex', fontSize: 60, fontWeight: 700, color: TEXT, marginTop: 36, maxWidth: 920, lineHeight: 1.15 }}>
         Know your match score before you apply

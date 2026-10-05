@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
-const title = 'Resume Matcher';
+const title = 'Jobfit';
 const description =
   'AI-powered resume-to-job matching with skill gap analysis and improvement suggestions, entirely client-parsed and free to run.';
 
