@@ -3,19 +3,27 @@ import { AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AppNav } from '@/components/layout/AppNav';
 import { GenerateResumeFlow } from '@/components/dashboard/GenerateResumeFlow';
-import type { Profile } from '@/types/db';
+import type { Profile, Resume } from '@/types/db';
 
 export default async function GenerateResumePage() {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   const email = userData.user?.email;
 
-  const { data } = await supabase.from('profiles').select('*').single();
+  const [{ data }, { data: resumesData }] = await Promise.all([
+    supabase.from('profiles').select('*').single(),
+    supabase.from('resumes').select('id').order('updated_at', { ascending: false }),
+  ]);
   const profile = data as Profile | null;
+  const resumes = (resumesData as Pick<Resume, 'id'>[] | null) ?? [];
   // Tailoring needs the structured profile fields (summary/skills/work
   // history), not just the raw resume text -- same check as the API route.
+  // It also needs a resume to pass as /api/analyze's required resumeId
+  // (see schemas/request.schema.ts), which this standalone flow doesn't let
+  // the user pick -- it uses whichever resume is currently active.
   const hasProfileContent =
     !!profile && (!!profile.summary || profile.skills.length > 0 || profile.work_experience.length > 0);
+  const activeResumeId = profile?.active_resume_id ?? resumes[0]?.id ?? null;
   const displayName = profile?.full_name ?? email;
 
   return (
@@ -33,7 +41,7 @@ export default async function GenerateResumePage() {
           </p>
         </div>
 
-        {!hasProfileContent ? (
+        {!hasProfileContent || !activeResumeId ? (
           <div className="flex items-start gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4">
             <AlertTriangle className="h-5 w-5 shrink-0 text-[var(--color-warning)]" />
             <p className="text-sm text-[var(--color-text-muted)]">
@@ -46,7 +54,7 @@ export default async function GenerateResumePage() {
           </div>
         ) : (
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">
-            <GenerateResumeFlow />
+            <GenerateResumeFlow resumeId={activeResumeId} />
           </div>
         )}
       </main>

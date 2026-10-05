@@ -64,10 +64,10 @@ Let a user store more than one named resume (for example "Frontend" and "Backend
 **Done when:** a user can add a second named resume without losing the first; the new analysis flow lets them pick which resume to match against; an account that only ever had one resume keeps working with no action needed on its owner's part.
 spec [0001](../specs/0001-multiple-resumes-add-switch/index.md) · code in `app/api/resumes/`, `components/profile/ResumeList.tsx`, `components/layout/ResumeSwitcher.tsx`, `components/analyze/AnalyzeFlow.tsx`, `supabase/add-resumes-table.sql`
 - [x] Design it (spec): `/architect multiple resumes: add and switch between named resumes`
-- [ ] Build it: `/develop multiple resumes: add and switch between named resumes` — code complete (typechecks, lints, builds), blocked on running `supabase/add-resumes-table.sql` by hand (no Supabase CLI/service role key available to `/develop`); nothing below is runtime verified yet
-  - [ ] Resumes table migration, plus listing and adding a named resume, satisfies AC-1, AC-2
-  - [ ] Active resume switching, satisfies AC-4
-  - [ ] Resume picker on the New Analysis screen, satisfies AC-3, AC-8
+- [ ] Build it: `/develop multiple resumes: add and switch between named resumes` — `supabase/add-resumes-table.sql` has been run; migration, listing/adding, switching, and the analysis picker are runtime verified. Rename/replace/delete are not yet exercised.
+  - [x] Resumes table migration, plus listing and adding a named resume, satisfies AC-1, AC-2
+  - [x] Active resume switching, satisfies AC-4
+  - [x] Resume picker on the New Analysis screen, satisfies AC-3, AC-8
   - [ ] Rename, replace, and delete a resume, satisfies AC-5, AC-6, AC-7
 - [ ] Verify it: `/check verify multiple resumes: add and switch between named resumes`
 - [ ] Test it: `/test multiple resumes: add and switch between named resumes`

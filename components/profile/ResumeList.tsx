@@ -213,8 +213,11 @@ function ResumeRow({
     setActivating(true);
     try {
       const res = await fetch(`/api/resumes/${resume.id}/activate`, { method: 'POST' });
-      const json = (await res.json()) as ApiResponse<{ activated: true }>;
-      if (json.success) onActivated(resume.id);
+      const json = (await res.json()) as ApiResponse<{ activated: true; profile: CandidateProfile | null }>;
+      if (json.success) {
+        onActivated(resume.id);
+        if (json.data.profile) onExtracted?.(json.data.profile);
+      }
     } catch {
       // Stays inactive on a network error; the button re-enables for a retry.
     } finally {

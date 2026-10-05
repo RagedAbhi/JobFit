@@ -7,12 +7,12 @@ export function TailoredResumeView({ resume }: { resume: TailoredResume }) {
   const contactParts = [resume.email, resume.phone, resume.location, ...resume.links].filter(Boolean);
 
   return (
-    <div className="mx-auto max-w-[8.5in] bg-white p-10 text-gray-900 shadow-sm print:shadow-none">
+    <div className="mx-auto max-w-[8.5in] bg-white p-5 text-gray-900 shadow-sm sm:p-10 print:p-10 print:shadow-none">
       <header className="border-b border-gray-300 pb-4">
-        <h1 className="text-2xl font-bold">{resume.fullName}</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">{resume.fullName}</h1>
         <p className="mt-0.5 text-sm font-medium text-gray-600">{resume.headline}</p>
         {contactParts.length > 0 && (
-          <p className="mt-2 text-xs text-gray-500">{contactParts.join('  ·  ')}</p>
+          <p className="mt-2 text-xs text-gray-500 break-words">{contactParts.join('  ·  ')}</p>
         )}
       </header>
 
@@ -33,7 +33,7 @@ export function TailoredResumeView({ resume }: { resume: TailoredResume }) {
           <div className="mt-2 space-y-4">
             {resume.workExperience.map((job, i) => (
               <div key={i}>
-                <div className="flex items-baseline justify-between gap-3">
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                   <p className="text-sm font-semibold text-gray-900">
                     {job.title} <span className="font-normal text-gray-600">— {job.company}</span>
                   </p>
@@ -63,7 +63,7 @@ export function TailoredResumeView({ resume }: { resume: TailoredResume }) {
             {resume.education.map((edu, i) => {
               const degreeLine = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(', ');
               return (
-                <div key={i} className="flex items-baseline justify-between gap-3">
+                <div key={i} className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                   <p className="text-sm text-gray-800">
                     <span className="font-semibold">{edu.institution}</span>
                     {degreeLine ? ` — ${degreeLine}` : ''}

@@ -4,6 +4,7 @@ import { AIAnalysisResponseSchema } from '@/schemas/ai-response.schema';
 import {
   buildAnalysisPrompt,
   callGroqForAnalysis,
+  extractCandidateProfile,
   GroqInvalidOutputError,
   GroqRateLimitError,
   GroqTransientError,
@@ -11,7 +12,7 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { ApiErrorCode, ApiResponse, AnalyzeSuccessResponse } from '@/types/analysis';
-import type { Resume } from '@/types/db';
+import type { Profile, Resume } from '@/types/db';
 
 // Vercel Hobby: default fn timeout is 10s, configurable up to 60s (the
 // ceiling on this plan). callGroqForAnalysis can try several models
@@ -69,13 +70,13 @@ export async function POST(req: NextRequest) {
   // Ownership check, doubling up on RLS (supabase/AGENTS.md: never rely on
   // app-level checks alone). A resumeId for another account's resume reads
   // as a plain not-found rather than leaking whose it is.
-  const { data: resumeData } = await supabase
-    .from('resumes')
-    .select('*')
-    .eq('id', resumeId)
-    .eq('user_id', user.id)
-    .single();
+  const [{ data: resumeData }, { data: profileData }] = await Promise.all([
+    supabase.from('resumes').select('*').eq('id', resumeId).eq('user_id', user.id).single(),
+    supabase.from('profiles').select('active_resume_id').eq('id', user.id).single(),
+  ]);
   const resume = resumeData as Resume | null;
+  const wasAlreadyActive =
+    ((profileData as Pick<Profile, 'active_resume_id'> | null)?.active_resume_id ?? null) === resumeId;
 
   if (!resume) {
     return jsonError('INVALID_REQUEST', 'That resume was not found. Pick a resume to analyze.', 400);
@@ -159,10 +160,34 @@ export async function POST(req: NextRequest) {
 
       // Picking a resume here also switches it to the account's active one
       // (see docs/specs/0001-multiple-resumes-add-switch/index.md, AC-3) -- best
-      // effort, never blocks returning the analysis that already saved.
+      // effort, never blocks returning the analysis that already saved. If
+      // this resume wasn't already active, re-sync the shared profile
+      // fields the same way the activate route and the active-resume file
+      // replace path do, so "which resume is active" and "what the Profile
+      // page shows" never drift apart.
+      const extractedProfile = wasAlreadyActive ? null : await extractCandidateProfile(resume.resume_text);
+
       const { error: activateError } = await supabase
         .from('profiles')
-        .update({ active_resume_id: resume.id, updated_at: new Date().toISOString() })
+        .update({
+          active_resume_id: resume.id,
+          updated_at: new Date().toISOString(),
+          ...(extractedProfile && {
+            full_name: extractedProfile.name,
+            headline: extractedProfile.headline,
+            email: extractedProfile.email,
+            phone: extractedProfile.phone,
+            location: extractedProfile.location,
+            links: extractedProfile.links,
+            skills: extractedProfile.skills,
+            years_experience: extractedProfile.yearsExperience,
+            summary: extractedProfile.summary,
+            work_experience: extractedProfile.workExperience,
+            education: extractedProfile.education,
+            certifications: extractedProfile.certifications,
+            projects: extractedProfile.projects,
+          }),
+        })
         .eq('id', user.id);
       if (activateError) {
         console.error(

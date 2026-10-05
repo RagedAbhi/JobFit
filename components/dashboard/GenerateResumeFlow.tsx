@@ -13,7 +13,7 @@ type Status = 'idle' | 'analyzing' | 'writing' | 'error' | 'rate-limited';
 
 const MIN_JD_LENGTH = 30;
 
-export function GenerateResumeFlow() {
+export function GenerateResumeFlow({ resumeId }: { resumeId: string }) {
   const router = useRouter();
   const [jobDescription, setJobDescription] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -30,7 +30,7 @@ export function GenerateResumeFlow() {
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescriptionText: jobDescription }),
+        body: JSON.stringify({ jobDescriptionText: jobDescription, resumeId }),
       });
       const analyzeJson = (await analyzeRes.json()) as ApiResponse<AnalyzeSuccessResponse>;
 
@@ -62,7 +62,7 @@ export function GenerateResumeFlow() {
       setErrorMessage('Network error — please check your connection and try again.');
       setStatus('error');
     }
-  }, [jobDescription, router]);
+  }, [jobDescription, resumeId, router]);
 
   return (
     <div className="space-y-6">
