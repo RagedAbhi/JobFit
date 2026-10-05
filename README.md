@@ -14,7 +14,7 @@ Users sign up, upload a resume once, and match it against as many job descriptio
 
 ## Live demo
 
-Not deployed yet -- clone and run it locally with your own free Supabase + Groq keys using the steps below (a few minutes).
+**[job-fit-beige.vercel.app](https://job-fit-beige.vercel.app/)** -- sign up with your own account (free), or clone and run it locally with your own Supabase + Groq keys using the steps below.
 
 ## Screenshots
 
